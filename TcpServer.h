@@ -38,33 +38,33 @@ class ServerSocket
       {
      	try
      	{
-	         // create a TCP server socket
-	         sockfd =  socket(AF_INET, SOCK_STREAM, 0);
-	         if (sockfd < 0) {error("ERROR opening socket");}
-	         // cout << "creating a TCP socket ..." << endl; //debug output
-	         // clear address structure
-	         bzero((char *) &serv_addr, sizeof(serv_addr));
-	         serv_addr.sin_family = AF_INET;
-	         serv_addr.sin_addr.s_addr = INADDR_ANY; //accepts all client ip
-	         serv_addr.sin_port = htons(portno);
-	         // bind the socket the host IP address with specified port
-	         // if port is already used, it will be reuse again on next startup
-             int yes = 1;
-             int bindStatus = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-	         bindStatus = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
-	         if ( bindStatus < 0) {error("ERROR on binding");}
-	         // cout << "binding the socket ..." << endl; //debug output
-	         // set the maximum size for the backlog queue
-	         listen(sockfd, 10);
-	         cout << "server listening on port " << portno << endl;
-	         // accept() call will now wait for incoming connection
-	         clilen = sizeof(cli_addr);
-	         cout << "press Ctrl-C to stop the server\n" << endl;
-         }
-         catch (exception& e)
-  		 {
-		    cerr << e.what() << endl;
-  		 }
+	        // create a TCP server socket
+	        sockfd =  socket(AF_INET, SOCK_STREAM, 0);
+	        if (sockfd < 0) {error("ERROR opening socket");}
+	        // cout << "creating a TCP socket ..." << endl; //debug output
+	        // clear address structure
+	        bzero((char *) &serv_addr, sizeof(serv_addr));
+	        serv_addr.sin_family = AF_INET;
+	        serv_addr.sin_addr.s_addr = INADDR_ANY; //accepts all client ip
+	        serv_addr.sin_port = htons(portno);
+	        // bind the socket the host IP address with specified port
+	        // if port is already used, it will be reused again on next startup
+             	int yes = 1;
+             	int bindStatus = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+	        bindStatus = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+	        if ( bindStatus < 0) {error("ERROR on binding");}
+	        // cout << "binding the socket ..." << endl; //debug output
+	        // set the maximum size for the backlog queue
+	        listen(sockfd, 10);
+	        cout << "server listening on port " << portno << endl;
+	        // accept() call will now wait for incoming connection
+	        clilen = sizeof(cli_addr);
+	        cout << "press Ctrl-C to stop the server\n" << endl;
+        }
+        catch (exception& e)
+  	{
+		 cerr << e.what() << endl;
+  	}
       }
 
       public:
@@ -89,7 +89,8 @@ class ServerSocket
             }
       }
       // read data from connected client, use only acceptSocket method
-      const char* readData(){
+      const char* readData()
+      {
             try
             {
                 bzero(message, 256);
@@ -104,7 +105,6 @@ class ServerSocket
             }
 
             return message;
-
       }
 };
 
