@@ -3,8 +3,9 @@
 * File:   TcpServer.h
 * Author: Ed Alegrid
 *
+* This is just a standard TCP socket based on Beej's Guide to Network Programming.
+* We are just trying to re-structure it for object-oriented programming in C++. 
 */
-
 
 #pragma once
 #include <string.h>
@@ -16,12 +17,11 @@ namespace TcpServer{
 class ServerSocket
 {
       int sockfd, newsockfd;
-      int port;
+      int port, n;
       socklen_t clilen;
       char message[256];
       struct sockaddr_in serv_addr, cli_addr;
-      int n;
-
+      
 [[noreturn]] void error(const char *msg)
       {
             perror(msg);
@@ -43,23 +43,23 @@ class ServerSocket
 	        serv_addr.sin_family = AF_INET;
 	        serv_addr.sin_addr.s_addr = INADDR_ANY; //accepts all client ip
 	        serv_addr.sin_port = htons(port);
-	        // bind the socket the host IP address with specified port
-	        // if port is already used, it will be reused again on next startup
+	        // bind the socket with the host IP address with the specified port
+	        // if port is already used, it will be re-used again on next startup
              	int yes = 1;
              	int bindStatus = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 	        bindStatus = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
 	        if ( bindStatus < 0) {error("ERROR on binding");}
 	        // cout << "binding the socket ..." << endl; //debug output
 	        // set the maximum size for the backlog queue
-	        listen(sockfd, 10);
+	        listen(sockfd, 5);
 	        cout << "server listening on port " << port << endl;
-	        // accept() call will now wait for incoming connection
+	       
 	        clilen = sizeof(cli_addr);
 	        cout << "press Ctrl-C to stop the server\n" << endl;
         }
         catch (exception& e)
   	{
-		 cerr << e.what() << endl;
+		cerr << e.what() << endl;
   	}
       }
 
@@ -76,15 +76,19 @@ class ServerSocket
       {
             try
             {
+                // accept() call will wait for new client
                 newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
                 if (newsockfd < 0){error("ERROR on accept");}
+                // cout << "newsockfd: " << newsockfd << endl; //debug output, should be 4 always
+                // we can re-use it or assign it to a new child process in an infinite loop
+                // here we will just re-use it and close it after read or send process 
             }
             catch (exception& e)
             {
                 cerr << e.what() << endl;
             }
       }
-      // read data from connected client, use only acceptSocket method
+      // read data from connected client, use only after calling acceptSocket() method
       const char* readData()
       {
             try
@@ -92,14 +96,13 @@ class ServerSocket
                 bzero(message, 256);
                 n = read(newsockfd, message, 256);
                 if (n < 0) {error("ERROR reading from socket");}
-
+		// close socket after reading data
                 close(newsockfd);
             }
             catch (exception& e)
             {
                 cerr << e.what() << endl;
             }
-
             return message;
       }
 };
