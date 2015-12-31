@@ -9,6 +9,7 @@
 #include "TcpServer.h"
 #include "TcpClient.h"
 #include "Device.h"
+
 namespace Controller{
 
 class App
@@ -18,8 +19,8 @@ class App
         ~App() {}
 
         /*   All application logic goes here */
-        int startCtrlAction(){
-
+        int startCtrlAction()
+        {
             cout << "\n*** C++ IO-Control Module Project ***\n" << endl;
 
             /* server socket port details for incoming web client control code */
@@ -30,7 +31,7 @@ class App
             /*cout << "Enter TCP server localhost port no: ";
             cin >>serverport;*/
 
-            // create, bind, start listening
+            // create socket, bind it and start listening
             unique_ptr<TcpServer::ServerSocket> server(new TcpServer::ServerSocket());
             server->createSocket(serverport);
 
@@ -38,40 +39,38 @@ class App
             char* ip = "localhost";
             char* clientport = "5555";
 
-                // server new connection loop
-                int loop = true;
-                 while(loop)
-                 {
-                    try
-                    {
-                        // listen and accept new client
-                        server->acceptSocket();
-                        const char* data = server->readData();
-                        cout << "control data from web client: " << data << endl;
+            int loop = true;
+             while(loop)
+             {
+                try
+                {
+                    // listen and accept new client
+                    server->acceptSocket();
+                    // receive data from web client
+                    const char* data = server->readData();
+                    cout << "control data from web client: " << data << endl;
+                    // process received data
+                    unique_ptr< Device:: ControlLogic> ControlModule(new  Device::ControlLogic());
+                    const char* msg = ControlModule->processData(data);
+                    cout << "device status: " << msg << endl;
+                    // send confirmation data to web client
+                    unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket());
+                    client->sendMsg(ip, clientport, data);
+                    cout << "sending confirmation code to web client: " << data << endl;
 
-                        unique_ptr< Device:: ControlLogic> ControlModule(new  Device::ControlLogic());
-                        const char* msg = ControlModule->processData(data);
-                        cout << "device status: " << msg << endl;
+                    cout << "waiting for client connection ... " << endl;
+                }
+                catch (exception& e)
+                {
+                    loop = false;
+                    cerr << "server error: " << e.what() << endl;
+                    cout << "Please restart server." << endl;
+                }
+             }
 
-                        unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket());
-                        if(client){
-                            client->sendMsg(ip, clientport, data);
-                            cout << "sending confirmation code to web client: " << data << endl; //for debug
-                        }
-                        cout << "waiting for client connection ... " << endl;
-                    }
-                    catch (exception& e)
-                    {
-                        loop = false;
-                        cerr << "server error: " << e.what() << endl;
-                        cout << "Please restart server." << endl;
+        return 1;
 
-                    }
-                 }
-
-                 return 0;
-
-            }
+        }
 };
 
 }

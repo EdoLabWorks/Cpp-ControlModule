@@ -4,7 +4,6 @@
  * Author: Ed Alegrid
  *
  */
-#pragma once
 
 namespace Device{
 
