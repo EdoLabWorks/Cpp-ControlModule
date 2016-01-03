@@ -3,8 +3,6 @@
 * File:   TcpServer.h
 * Author: Ed Alegrid
 *
-* This is just a standard TCP socket based on Beej's Guide to Network Programming.
-* We are just trying to re-structure it for object-oriented programming in C++. 
 */
 
 #pragma once
@@ -79,10 +77,7 @@ class ServerSocket
                 // accept() call will wait for new client
                 newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
                 if (newsockfd < 0){error("ERROR on accept");}
-                // cout << "newsockfd: " << newsockfd << endl; //debug output, should be 4 always
-                // we can re-use it or assign it to a new child process in an infinite loop
-                // here we will just re-use it and close it after read or send process 
-            }
+	    }
             catch (exception& e)
             {
                 cerr << e.what() << endl;
@@ -96,7 +91,7 @@ class ServerSocket
                 bzero(message, 256);
                 n = read(newsockfd, message, 256);
                 if (n < 0) {error("ERROR reading from socket");}
-		// close socket after reading data
+
                 close(newsockfd);
             }
             catch (exception& e)
