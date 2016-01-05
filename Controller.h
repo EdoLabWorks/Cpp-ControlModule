@@ -65,6 +65,8 @@ class App
                     loop = false;
                     cerr << "server error: " << e.what() << endl;
                     cout << "Please restart server." << endl;
+                    server.reset(nullptr);
+                    exit(1);
                 }
              }
 
