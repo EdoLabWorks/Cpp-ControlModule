@@ -10,8 +10,9 @@
 
 #include <iostream>
 #include <memory>
-using namespace std;
 #include "Controller.h"
+
+using namespace std;
 
 int main()
 {
