@@ -1,3 +1,4 @@
+
 // -*- C++ -*-
 /*
  * File:   TcpClient.h
@@ -12,14 +13,14 @@
 
 namespace TcpClient
 {
+using namespace std;
 
 class ClientSocket
 {
       char* ip;
       char* port;
-      int sockfd;
+      int sockfd, rv;
       struct addrinfo hints, *servinfo, *p;
-      int rv;
       char s[INET6_ADDRSTRLEN];
 
       void *get_in_addr(struct sockaddr *sa)
@@ -31,10 +32,8 @@ class ClientSocket
       }
 
       // initialize TCP client socket and make a connection
-      void initSocket(char* ip, char* port)
+      void initSocket()
       {
-            this->ip = ip;
-            this->port = port;
             memset(&hints, 0, sizeof hints);
             hints.ai_family = AF_UNSPEC;
             hints.ai_socktype = SOCK_STREAM;
@@ -70,15 +69,17 @@ class ClientSocket
       }
 
       public:
-        ClientSocket() {}
+         ClientSocket(char* clientip, char* portno): ip{clientip}, port{portno}
+         {
+            initSocket();  //initialize and connect to a remote socket
+         }
         ~ClientSocket() {}
+
         // public interface
-        void sendMsg(char* ip, char* port, const char* msg)
+        void sendMsg(const char* msg)
         {
-            // initialize and connect to a remote socket
             try
             {
-                initSocket(ip, port);
                 int len;
                 len = strlen(msg);
                 send(sockfd, msg, len, 0);
@@ -93,5 +94,4 @@ class ClientSocket
 };
 
 }
-
 

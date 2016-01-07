@@ -1,3 +1,4 @@
+
 // -*- C++ -*-
 /*
 * File:   TcpServer.h
@@ -10,16 +11,17 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-namespace TcpServer{
+namespace TcpServer {
+using namespace std;
 
 class ServerSocket
 {
       int sockfd, newsockfd;
       int port, n;
-      socklen_t clilen;
+      socklen_t clen;
       char message[256];
-      struct sockaddr_in serv_addr, cli_addr;
-      
+      struct sockaddr_in server_addr, client_addr;
+
 [[noreturn]] void error(const char *msg)
       {
             perror(msg);
@@ -37,45 +39,44 @@ class ServerSocket
 	        if (sockfd < 0) {error("ERROR opening socket");}
 	        // cout << "creating a TCP socket ..." << endl; //debug output
 	        // clear address structure
-	        bzero((char *) &serv_addr, sizeof(serv_addr));
-	        serv_addr.sin_family = AF_INET;
-	        serv_addr.sin_addr.s_addr = INADDR_ANY; //accepts all client ip
-	        serv_addr.sin_port = htons(port);
+	        bzero((char *) &server_addr, sizeof(server_addr));
+	        server_addr.sin_family = AF_INET;
+	        server_addr.sin_addr.s_addr = INADDR_ANY; //accepts all client ip
+	        server_addr.sin_port = htons(port);
 	        // bind the socket with the host IP address with the specified port
 	        // if port is already used, it will be re-used again on next startup
-             	int yes = 1;
-             	int bindStatus = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-	        bindStatus = bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr));
+            int yes = 1;
+            int bindStatus = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+	        bindStatus = bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
 	        if ( bindStatus < 0) {error("ERROR on binding");}
 	        // cout << "binding the socket ..." << endl; //debug output
 	        // set the maximum size for the backlog queue
 	        listen(sockfd, 5);
 	        cout << "server listening on port " << port << endl;
-	       
-	        clilen = sizeof(cli_addr);
+
+	        clen = sizeof(client_addr);
 	        cout << "press Ctrl-C to stop the server\n" << endl;
         }
         catch (exception& e)
-  	{
-		cerr << e.what() << endl;
-  	}
+        {
+            cerr << e.what() << endl;
+        }
       }
 
       public:
-        ServerSocket() {}
+         ServerSocket(int &portno): port{portno}
+         {
+            initSocket(); //initialize, bind and start listening
+         }
         ~ServerSocket() {}
 
-      void createSocket(int port){
-            this->port = port;
-            initSocket();
-      }
       // accept new client from the socket
       void acceptSocket()
       {
             try
             {
                 // accept() call will wait for new client
-                newsockfd = accept(sockfd, (struct sockaddr *) &cli_addr, &clilen);
+                newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &clen);
                 if (newsockfd < 0){error("ERROR on accept");}
 	    }
             catch (exception& e)
