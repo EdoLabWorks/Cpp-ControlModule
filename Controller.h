@@ -1,3 +1,4 @@
+
 // -*- C++ -*-
 /*
  * File:   Controller.h
@@ -10,7 +11,8 @@
 #include "TcpClient.h"
 #include "Device.h"
 
-namespace Controller{
+namespace Controller {
+using namespace std;
 
 class App
 {
@@ -32,8 +34,7 @@ class App
             cin >>serverport;*/
 
             // create socket, bind it and start listening
-            unique_ptr<TcpServer::ServerSocket> server(new TcpServer::ServerSocket());
-            server->createSocket(serverport);
+            unique_ptr<TcpServer::ServerSocket> server(new TcpServer::ServerSocket(serverport));
 
             /* client socket details for web client websocket server */
             char* ip = "localhost";
@@ -54,8 +55,8 @@ class App
                     const char* msg = ControlModule->processData(data);
                     cout << "device status: " << msg << endl;
                     // send confirmation data to web client
-                    unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket());
-                    client->sendMsg(ip, clientport, data);
+                     unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket(ip, clientport));
+                    client->sendMsg(data);
                     cout << "sending confirmation code to web client: " << data << endl;
 
                     cout << "waiting for client connection ... " << endl;
@@ -70,7 +71,7 @@ class App
                 }
              }
 
-        return 1;
+         exit(1);
 
         }
 };
