@@ -1,11 +1,14 @@
+
 // -*- C++ -*-
 /*
  * File:   Device.h
  * Author: Ed Alegrid
  *
  */
+#pragma once
 
-namespace Device{
+namespace Device {
+using namespace std;
 
 class ControlLogic
 {
