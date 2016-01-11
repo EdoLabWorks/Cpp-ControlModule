@@ -1,5 +1,4 @@
 
-// -*- C++ -*-
 /*
 * File:   TcpServer.h
 * Author: Ed Alegrid
@@ -10,97 +9,168 @@
 #include <string.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <errno.h>
+#include "SocketError.h"
 
 namespace TcpServer {
 using namespace std;
 
 class ServerSocket
 {
-      int sockfd, newsockfd;
-      int port, n;
+      int sockfd, newsockfd, port;
       socklen_t clen;
-      char message[256];
+      char data[256];
       struct sockaddr_in server_addr, client_addr;
+      int listenF = false;
+      int ServerLoop = false;
 
+// C-style error handler
 [[noreturn]] void error(const char *msg)
       {
             perror(msg);
             close(newsockfd);
             close(sockfd);
+            delete this;
             exit(1);
       }
 
-      void initSocket()
+      void initSocket(const int &portno)
       {
+        port = portno;
      	try
      	{
-	        // create a TCP server socket
+	        // create TCP server socket
 	        sockfd =  socket(AF_INET, SOCK_STREAM, 0);
-	        if (sockfd < 0) {error("ERROR opening socket");}
-	        // cout << "creating a TCP socket ..." << endl; //debug output
+	        if (sockfd < 0) {
+                //error("ERROR opening socket"); // for C-style error handler
+                throw SocketError(); // for C++ error handler
+	        }
+	        // cout << "creating socket ..." << endl; //debug output
 	        // clear address structure
 	        bzero((char *) &server_addr, sizeof(server_addr));
 	        server_addr.sin_family = AF_INET;
-	        server_addr.sin_addr.s_addr = INADDR_ANY; //accepts all client ip
+	        server_addr.sin_addr.s_addr = INADDR_ANY;
 	        server_addr.sin_port = htons(port);
 	        // bind the socket with the host IP address with the specified port
 	        // if port is already used, it will be re-used again on next startup
             int yes = 1;
-            int bindStatus = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-	        bindStatus = bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
-	        if ( bindStatus < 0) {error("ERROR on binding");}
-	        // cout << "binding the socket ..." << endl; //debug output
+            int bindStat = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+	        bindStat = bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
+	        if ( bindStat < 0) {
+                //error("ERROR on binding");
+                throw SocketError();
+	        }
 	        // set the maximum size for the backlog queue
 	        listen(sockfd, 5);
-	        cout << "server listening on port " << port << endl;
-
 	        clen = sizeof(client_addr);
-	        cout << "press Ctrl-C to stop the server\n" << endl;
         }
-        catch (exception& e)
+
+        catch (SocketError& e)
         {
-            cerr << e.what() << endl;
+            cerr << "Server Initialize Error: " << e.what() << endl;
+            closeHandler();
         }
+      }
+
+      // cleanup method
+      void closeHandler() const
+      {
+             Close();
+             delete this;
+             exit(1);
       }
 
       public:
-         ServerSocket(int &portno): port{portno}
-         {
-            initSocket(); //initialize, bind and start listening
-         }
-        ~ServerSocket() {}
+         ServerSocket(){} // use with createServer method
+         ServerSocket(const int &portno): port{portno} { initSocket(portno); } // option to supply port and start socket initialization
+         virtual ~ServerSocket() {}
 
-      // accept new client from the socket
-      void acceptSocket()
+      // provide port, initialize, bind, start listening for client connection
+      void createServer(const int &portno)
+      {
+            initSocket(portno);
+      }
+
+      // listen and accept new client from the socket
+      void Listen(int serverloop = false)
+      {
+            ServerLoop = serverloop;
+
+            if (!listenF){
+                // initial console output, provide one in your main app
+                cout << "server listening on port: " << port << "\n\n"; //debug output
+                listenF = true;
+            }
+
+            try
+            {
+                // Listen() call will wait for new client
+                newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &clen);
+                if (newsockfd < 0){
+                    //error("ERROR on accept");
+                    throw SocketError();
+                }
+
+            }
+            catch (SocketError& e)
+            {
+                cerr << "Server Listen Error: " << e.what() << endl;
+                closeHandler();
+            }
+
+      }
+
+      // read data, use only after calling Listen() call
+      virtual const char* Read()
       {
             try
             {
-                // accept() call will wait for new client
-                newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &clen);
-                if (newsockfd < 0){error("ERROR on accept");}
-	    }
+                bzero(data, sizeof(data));
+                int n = recv(newsockfd, data, sizeof(data), 0);
+                if (n < 0) {
+                    //error("ERROR server reading from socket");
+                    throw SocketError();
+                }
+            }
+            catch (SocketError& e)
+            {
+                cerr << "Server Read Error: " << e.what() << endl;
+                closeHandler();
+            }
+            return data;
+      }
+
+       // send data, use only after calling Listen() call
+       virtual void Send(const char* msg) const
+       {
+            try
+            {
+                int len;
+                len = strlen(msg);
+                int n = send(newsockfd, msg, len, 0);
+                if (n < 0) {
+                    //error("ERROR server sending to socket");
+                    throw SocketError();
+                }
+            }
             catch (exception& e)
             {
-                cerr << e.what() << endl;
+                cerr << "Server Send Error: " << e.what() << endl;
+                closeHandler();
             }
-      }
-      // read data from connected client, use only after calling acceptSocket() method
-      const char* readData()
-      {
-            try
-            {
-                bzero(message, 256);
-                n = read(newsockfd, message, 256);
-                if (n < 0) {error("ERROR reading from socket");}
+       }
 
+       // close socket
+       virtual void Close() const
+       {
+            if(ServerLoop){
                 close(newsockfd);
             }
-            catch (exception& e)
-            {
-                cerr << e.what() << endl;
+            else{
+                close(newsockfd);
+                close(sockfd);
             }
-            return message;
-      }
+       }
 };
 
 }
