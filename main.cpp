@@ -1,10 +1,11 @@
-// -*- C++ -*-
+
 /*
  * File:   main.ccp
  * Author: Ed Alegrid
  *
- * Use at least a C++11 compliant compiler
- * For now, this app will only work on Linux OS.
+ * For now, this app will work only on Linux OS.
+ * Use any C++11 compliant compiler.
+ * This is a single process synchronous blocking code.
  *
  */
 
@@ -16,7 +17,8 @@ using namespace std;
 
 int main()
 {
-    unique_ptr<Controller::App> app(new Controller::App());
+
+    unique_ptr<Controller::App> app(new Controller::App);
     app->startCtrlAction();
 
    return 0;

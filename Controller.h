@@ -6,6 +6,7 @@
  */
 
 #pragma once
+#include <memory>
 #include "TcpServer.h"
 #include "TcpClient.h"
 #include "Device.h"
@@ -32,41 +33,44 @@ class App
             /*cout << "Enter TCP server localhost port no: ";
             cin >>serverport;*/
 
-            unique_ptr<TcpServer::ServerSocket> server(new TcpServer::ServerSocket(serverport));
-            /* you can also use the initialization pattern below, usually for multiple server application */
-            //unique_ptr<TcpServer::ServerSocket> server(new TcpServer::ServerSocket());
-            //server->createServer(serverport);
+            unique_ptr<TcpServer::ServerSocket> server(new TcpServer::ServerSocket);
+            // create server and provide server port
+            server->createServer(serverport);
 
             /* client socket details for web client websocket server */
             char* ip = "localhost";
-            char* clientport = "5555";
+            char* webclientport = "5555";
 
             int loop = true;
             while(loop)
             {
                 try
                 {
+
                     // listen and accept new client
-                    server->Listen(true); // set to true for continous loop, false or no parameter for one time use
+                    server->Listen(true); // set to true for continous loop, set to false or no parameter for one time server use
+
                     // receive data from web client
                     const char* data = server->Read();
                     cout << "data from web client: " << data << endl;
 
                     // process received data
-                    unique_ptr< Device:: ControlLogic> ControlModule(new  Device::ControlLogic());
+                    unique_ptr< Device:: ControlLogic> ControlModule(new  Device::ControlLogic);
                     const char* msg = ControlModule->processData(data);
                     cout << "device status: " << msg << endl;
 
-                    unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket(ip, clientport));
+                    // create client
+                    unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket);
+                    client->Connect(webclientport); // provide remote endpoint port and ip, if ip is not provided it will default to "localhost"
                     // send data to web client
                     client->Send(data);
-                    client->Close(); // close client socket
+                    client->Close();
                     cout << "send data to web client: " << data << endl;
 
                     cout << "waiting for new data ... \n" << endl;
-                    // since Listen(true) is set to continous loop,
-                    // close operation will only close the newsockfd but not the base sockfd
+                    // since Listen(true) is set to continous loop, close operation will only close the newsockfd but not sockfd
                     server->Close();
+
                 }
                 catch (SocketError& e)
                 {
@@ -82,6 +86,7 @@ class App
          exit(1);
 
         }
+
 };
 
 }
