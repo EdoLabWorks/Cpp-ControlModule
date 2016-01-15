@@ -1,9 +1,9 @@
 
 /*
-* File:   TcpServer.h
-* Author: Ed Alegrid
-*
-*/
+ * File:   TcpServer.h
+ * Author: Ed Alegrid
+ *
+ */
 
 #pragma once
 #include <string.h>
@@ -39,32 +39,32 @@ class ServerSocket
         port = portno;
      	try
      	{
-	        // create TCP server socket
-	        sockfd =  socket(AF_INET, SOCK_STREAM, 0);
-	        if (sockfd < 0) {
-                //error("ERROR opening socket"); // for C-style error handler
-                throw SocketError(); // for C++ error handler
-	        }
-	        // cout << "creating socket ..." << endl; //debug output
-	        // clear address structure
-	        bzero((char *) &server_addr, sizeof(server_addr));
-	        server_addr.sin_family = AF_INET;
-	        server_addr.sin_addr.s_addr = INADDR_ANY;
-	        server_addr.sin_port = htons(port);
-	        // bind the socket with the host IP address with the specified port
-	        // if port is already used, it will be re-used again on next startup
+            // create a TCP server socket
+            sockfd =  socket(AF_INET, SOCK_STREAM, 0);
+            if (sockfd < 0) {
+                    //error("ERROR opening socket"); // for C-style error handler
+                    throw SocketError(); // for C++ error handler
+            }
+
+            bzero((char *) &server_addr, sizeof(server_addr));
+            server_addr.sin_family = AF_INET;
+            server_addr.sin_addr.s_addr = INADDR_ANY;
+            server_addr.sin_port = htons(port);
+
             int yes = 1;
             int bindStat = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-	        bindStat = bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
-	        if ( bindStat < 0) {
-                //error("ERROR on binding");
-                throw SocketError();
-	        }
-	        // set the maximum size for the backlog queue
-	        listen(sockfd, 5);
-	        clen = sizeof(client_addr);
+            bindStat = bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr));
+            if ( bindStat < 0)
+            {
+                    //error("ERROR on binding");
+                    throw SocketError();
+            }
+            else
+            {
+                    listen(sockfd, 5);
+                    clen = sizeof(client_addr);
+            }
         }
-
         catch (SocketError& e)
         {
             cerr << "Server Initialize Error: " << e.what() << endl;
@@ -75,9 +75,9 @@ class ServerSocket
       // cleanup method
       void closeHandler() const
       {
-             Close();
-             delete this;
-             exit(1);
+            Close();
+            delete this;
+            exit(1);
       }
 
       public:
@@ -140,9 +140,9 @@ class ServerSocket
             return data;
       }
 
-       // send data, use only after calling Listen() call
-       virtual void Send(const char* msg) const
-       {
+      // send data, use only after calling Listen() call
+      virtual void Send(const char* msg) const
+      {
             try
             {
                 int len;
@@ -153,16 +153,16 @@ class ServerSocket
                     throw SocketError();
                 }
             }
-            catch (exception& e)
+            catch (SocketError& e)
             {
                 cerr << "Server Send Error: " << e.what() << endl;
                 closeHandler();
             }
-       }
+      }
 
-       // close socket
-       virtual void Close() const
-       {
+      // close socket
+      virtual void Close() const
+      {
             if(ServerLoop){
                 close(newsockfd);
             }
@@ -170,7 +170,7 @@ class ServerSocket
                 close(newsockfd);
                 close(sockfd);
             }
-       }
+      }
 };
 
 }

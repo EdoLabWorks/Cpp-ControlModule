@@ -24,7 +24,7 @@ class ClientSocket
       struct addrinfo hints, *servinfo, *p;
       char s[INET6_ADDRSTRLEN];
 
-      void *get_in_addr(struct sockaddr *sa)
+      void *get_addr(struct sockaddr *sa)
       {
             if (sa->sa_family == AF_INET) {
             return &(((struct sockaddr_in*)sa)->sin_addr);
@@ -33,8 +33,11 @@ class ClientSocket
       }
 
       // initialize a TCP client socket and attempt to make a connection to a remote endpoint
-      void initSocket()
+      const void initSocket(char* portno, char* clientip)
       {
+            ip = clientip;
+            port = portno;
+
             memset(&hints, 0, sizeof hints);
             hints.ai_family = AF_UNSPEC;
             hints.ai_socktype = SOCK_STREAM;
@@ -44,7 +47,7 @@ class ClientSocket
                 throw SocketError();
             }
 
-            // connect to a remote endpoint
+            // attempt to connect to a remote endpoint
             int n = 0;
             for(p = servinfo; p != NULL; p = p->ai_next) {
 
@@ -58,13 +61,14 @@ class ClientSocket
                      throw SocketError();
                 }
                 break;
-            }
 
-            if (p == NULL) {
-                 throw SocketError("client connect fail ...");
+
+                if (p == NULL) {
+                    throw SocketError("client connect fail ...");
+                }
             }
             // details of remote connected endpoint
-            inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
+            inet_ntop(p->ai_family, get_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
             //cout << "client connected to: " << s << ": " << port << endl; //debug ouput
             freeaddrinfo(servinfo);
       }
@@ -78,11 +82,16 @@ class ClientSocket
       }
 
       public:
-        ClientSocket(char* clientip, char* portno): ip{clientip}, port{portno}
+        ClientSocket() {}
+        ClientSocket(char* clientip, char* portno): port{portno}, ip{clientip} {}
+        virtual ~ClientSocket() {}
+
+	// provide remote endpoint port no. and ip address 
+        virtual const void Connect(char* portno, char* clientip = "localhost")
         {
             try
             {
-                initSocket();
+                initSocket(portno, clientip);
             }
             catch (SocketError& e)
             {
@@ -90,8 +99,6 @@ class ClientSocket
                 closeHandler();
             }
         }
-
-        virtual ~ClientSocket() {}
 
         // send data
         virtual void Send(const char* msg) const
@@ -105,7 +112,7 @@ class ClientSocket
                     throw SocketError();
                 }
             }
-            catch (exception& e)
+            catch (SocketError& e)
             {
                  cerr << "Client Send Error: " << e.what() << endl;
                  closeHandler();
@@ -140,4 +147,3 @@ class ClientSocket
 };
 
 }
-
