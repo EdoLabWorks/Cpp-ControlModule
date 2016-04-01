@@ -21,9 +21,9 @@ class App
         ~App() {}
 
         /* application logic goes here */
-        void startCtrlAction()
+        void startCtrl()
         {
-            cout << "\n*** C++ IO-Control Module Project ***\n" << endl;
+            cout << "\n*** C++ IO-Control Project ***\n" << endl;
 
             /* server socket port details for incoming web client control code */
             int serverport;
@@ -38,8 +38,7 @@ class App
             server->createServer(serverport);
 
             /* client socket details for web client websocket server */
-            char* ip = "localhost";
-            char* webclientport = "5555";
+            char* clientport = "5555";
 
             int loop = true;
             while(loop)
@@ -61,14 +60,16 @@ class App
 
                     // create client
                     unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket);
-                    client->Connect(webclientport); // provide remote endpoint port and ip, if ip is not provided it will default to "localhost"
+                    // provide remote endpoint port and ip, if ip is not provided it will default to "localhost"
+                    client->Connect(clientport);
                     // send data to web client
                     client->Send(data);
                     client->Close();
                     cout << "send data to web client: " << data << endl;
 
                     cout << "waiting for new data ... \n" << endl;
-                    // since Listen(true) is set to continous loop, close operation will only close the newsockfd but not sockfd
+                    // since Listen(true) is set to continous loop
+                    // close operation will only close the newsockfd but not sockfd
                     server->Close();
 
                 }
