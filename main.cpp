@@ -5,8 +5,9 @@
  *
  * For now, this app will work only on Linux OS.
  * Use any C++11 compliant compiler.
- * This is a single process synchronous blocking code.
- *
+ * This is a simple synchronous TCP client/server process with non-blocking read timeout.
+ * Mainly use for testing TCP socket communication with Node-WebControl Project.
+ * 
  */
 
 #include <iostream>
@@ -19,7 +20,7 @@ int main()
 {
 
     unique_ptr<Controller::App> app(new Controller::App);
-    app->startCtrlAction();
+    app->startCtrl();
 
    return 0;
 }
