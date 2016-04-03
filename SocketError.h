@@ -1,9 +1,8 @@
-
 /*
- * File:   SocketEror.h
- * Author: Ed Alegrid
- *
- */
+* File:   SocketEror.h
+* Author: Ed Alegrid
+*
+*/
 
 #pragma once
 #include <errno.h>
