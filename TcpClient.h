@@ -1,17 +1,15 @@
-
-
 /*
- * File:   TcpClient.h
- * Author: Ed Alegrid
- *
- */
+* File:   TcpClient.h
+* Author: Ed Alegrid
+*
+*/
 
 #pragma once
 #include <string.h>
 #include <netdb.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <sys/poll.h>
+#include <sstream>
 #include "SocketError.h"
 
 namespace TcpClient {
@@ -19,95 +17,103 @@ using namespace std;
 
 class ClientSocket
 {
-      	int sockfd, rv, rd;
-      	char data[256];
-      	struct addrinfo hints, *servinfo, *p;
-      	char s[INET6_ADDRSTRLEN];
-      	struct pollfd rs[1]; //read socket array for timeout
+      int sockfd, rv, rd;
+      char data[1024];
+      char s[INET6_ADDRSTRLEN];
+      struct pollfd rs[1];
 
-      	void *get_addr(struct sockaddr *sa)
-      	{
+      void *get_addr(struct sockaddr *sa)
+      {
             if (sa->sa_family == AF_INET) {
             return &(((struct sockaddr_in*)sa)->sin_addr);
             }
             return &(((struct sockaddr_in6*)sa)->sin6_addr);
-      	}
+      }
 
-      	// initialize a TCP client socket and attempt to make a connection to a remote endpoint
-      	const void initSocket(char* port, char* ip)
-      	{
-            memset(&hints, 0, sizeof hints);
+      const int initSocket(int port, string ip)
+      {
+            string PORT;
+            stringstream out;
+            out << port;
+            PORT = out.str();
+
+            addrinfo hints{};
             hints.ai_family = AF_UNSPEC;
             hints.ai_socktype = SOCK_STREAM;
+            addrinfo *servinfo{};
 
-            if ((rv = getaddrinfo(ip, port, &hints, &servinfo)) != 0) {
-                cout << "getaddrinfo:\n" << gai_strerror(rv) << endl;
-                throw SocketError();
-            }
+            try{
 
-            // attempt to connect to a remote endpoint
-            int n = 0;
-            for(p = servinfo; p != NULL; p = p->ai_next) {
-
-                if ((sockfd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
-                     throw SocketError();
+                if (port <= 0){
+                    throw SocketError("Invalid port");
                 }
 
-                if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-                     close(sockfd);
-                     n++; cout << n << " try" << endl;
-                     throw SocketError();
+                if ((rv = getaddrinfo(ip.c_str(), PORT.c_str(), &hints, &servinfo)) != 0) {
+                    cout << "getaddrinfo: " << gai_strerror(rv) << endl;
+                    throw SocketError("Invalid address");
                 }
-                break;
+
+                sockfd = {socket(servinfo->ai_family, servinfo->ai_socktype, servinfo->ai_protocol)};
+                int result{ connect(sockfd, servinfo->ai_addr, servinfo->ai_addrlen)};
+                if (result < 0)
+                {
+                    cout << "Client connection failed!" << endl;
+                    throw SocketError();
+                }
+                else
+                {
+                    // details of remote connected endpoint
+                    inet_ntop(servinfo->ai_family, get_addr((struct sockaddr *)servinfo->ai_addr), s, sizeof s);
+                    // initial client console output, provide one in your application
+                    cout << "Client connected to: " << s << ":" << port << endl; //debug ouput
+                }
+
+                if (servinfo == nullptr) {
+                    throw SocketError("Client connect fail ...");
+                }
+
+                freeaddrinfo(servinfo);
+
+                rs[0].fd = sockfd;
+                rs[0].events = POLLIN | POLLPRI;
+
+                return 0;
+
             }
 
-            if (p == NULL) {
-                throw SocketError("client connect fail ...");
+            catch (SocketError& e)
+            {
+                cerr << "Client Socket Initialize Error: " << e.what() << endl;
+                closeHandler();
+                exit(1);
             }
+      }
 
-            // details of remote connected endpoint
-            inet_ntop(p->ai_family, get_addr((struct sockaddr *)p->ai_addr), s, sizeof s);
-            cout << "client connected to: " << s << ": " << port << endl; //debug ouput
-            freeaddrinfo(servinfo);
-      	}
-
-      	// cleanup method
-      	void closeHandler() const
-      	{
+      void closeHandler() const
+      {
             Close();
             delete this;
             exit(1);
-       	}
+      }
 
-        public:
+      public:
         // 1st ctor, use with Connect() method
         ClientSocket() {}
         // 2nd ctor, immediately initialize the client socket with the port and ip provided
         // if no ip provided it will default to "localhost"
-        ClientSocket(char* port, char* ip = "localhost")  {initSocket(port, ip);}
+        ClientSocket(const int port, const string ip = "127.0.0.1")  {initSocket(port, ip);}
         virtual ~ClientSocket() {}
 
-        // provide server port to connect with the listening server, use with 1st ctor
-        // if no ip provided it will default to "localhost"
-        virtual const void Connect(  char* port, char* ip = "localhost")
+        virtual const void Connect(const int port, const string ip = "127.0.0.1")
         {
-            try
-            {
-                initSocket(port, ip);
-            }
-            catch (SocketError& e)
-            {
-                cerr << "Client Initialize Error: " << e.what() << endl;
-                closeHandler();
-            }
+            initSocket(port, ip);
         }
 
-        // send data
-        virtual void Send(const char* msg) const
+        virtual string Send(const string msg) const
         {
             try
             {
-                int n = send(sockfd, msg, strlen(msg), 0);
+                int n = send(sockfd, msg.c_str(), strlen(msg.c_str()), 0);
                 if (n < 0) {
                     throw SocketError();
                 }
@@ -117,32 +123,30 @@ class ClientSocket
                  cerr << "Client Send Error: " << e.what() << endl;
                  closeHandler();
             }
-       }
+            return msg;
+        }
 
-       // read data
-       virtual const char* Read()
+       virtual const string Read()
        {
             try
             {
-                rs[0].fd = sockfd;
-                // check for normal and out-of-bound data from the socket
-                rs[0].events = POLLIN | POLLPRI;
                 // check socket event for available data, wait 200 milliseconds for timeout
                 rd = poll(rs, 1, 200);
                 if (rd < 0) {
-                    //error("ERROR server reading from socket");
                     throw SocketError();
                 } else if (rd == 0) {
                     cout << "Client read timeout error! No data received!\n";
                 } else {
-                    int n;
+                    ssize_t n{1};
                     bzero(data, sizeof(data));
                     // check for events on newsockfd:
                     if (rs[0].revents & POLLIN) {
-                        n = recv(sockfd, data, sizeof(data), 0); // receive normal data
+                        rs[0].revents = 0;
+                        n = {recv(sockfd, data, sizeof(data), 0)}; // receive normal data
                     }
                     if (rs[0].revents & POLLPRI) {
-                        n = recv(sockfd, data, sizeof(data), MSG_OOB); // out-of-band data
+                        rs[0].revents = 0;
+                        n = {recv(sockfd, data, sizeof(data), MSG_OOB)}; // out-of-band data
                     }
                     if (n == 0){
                          cout << "Client read error, socket is closed or disconnected!\n";
@@ -157,13 +161,12 @@ class ClientSocket
             return data;
        }
 
-       // close socket
        virtual void Close() const
        {
             close(sockfd);
        }
-
 };
 
 }
+
 
