@@ -1,11 +1,11 @@
-
 /*
- * File:   Controller.h
- * Author: Ed Alegrid
- *
- */
+* File:   Controller.h
+* Author: Ed Alegrid
+*
+*/
 
 #pragma once
+#include <iostream>
 #include <memory>
 #include "TcpServer.h"
 #include "TcpClient.h"
@@ -20,74 +20,167 @@ class App
         App() {}
         ~App() {}
 
-        /* application logic goes here */
+        /* all application logic goes here */
+
+	/********************
+        * webcontrol server *
+	*********************/
         void startCtrl()
         {
             cout << "\n*** C++ IO-Control Project ***\n" << endl;
 
-            /* server socket port details for incoming web client control code */
-            int serverport;
-            serverport = 51111;
-
-            // option for entering port no. during app startup
-            /*cout << "Enter TCP server localhost port no: ";
-            cin >>serverport;*/
-
+            int serverport = 51111;
+            int clientport = 5556;
+            // create server, ctrlLogic and client
             unique_ptr<TcpServer::ServerSocket> server(new TcpServer::ServerSocket);
-            // create server and provide server port
+            unique_ptr<Device:: ControlLogic> ControlModule(new  Device::ControlLogic);
+            unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket);
+
             server->createServer(serverport);
-
-            /* client socket details for web client websocket server */
-            char* clientport = "5555";
-
             int loop = true;
             while(loop)
             {
                 try
                 {
-
                     // listen and accept new client
-                    server->Listen(true); // set to true for continous loop, set to false or no parameter for one time server use
-
+                    // set to true for continous loop, set to false or no parameter for one time server use
+                    server->Listen(true);
                     // receive data from web client
-                    const char* data = server->Read();
+                    string data = server->Read();
                     cout << "data from web client: " << data << endl;
-
                     // process received data
-                    unique_ptr< Device:: ControlLogic> ControlModule(new  Device::ControlLogic);
-                    const char* msg = ControlModule->processData(data);
+                    string msg = ControlModule->processData(data);
                     cout << "device status: " << msg << endl;
-
-                    // create client
-                    unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket);
-                    // provide remote endpoint port and ip, if ip is not provided it will default to "localhost"
+                    // tcp client connecting to server
+                    // provide remote endpoint port and ip
+                    // if ip is not provided it will default to localhost
                     client->Connect(clientport);
                     // send data to web client
                     client->Send(data);
+                    // close client socket
                     client->Close();
-                    cout << "send data to web client: " << data << endl;
-
-                    cout << "waiting for new data ... \n" << endl;
-                    // since Listen(true) is set to continous loop
-                    // close operation will only close the newsockfd but not sockfd
+                    cout << "data to web client: " << data << endl;
+                    cout << "waiting for new data ... \n\n";
+                    // close server socket
+                    // since Listen(true) is set to continous loop, close operation will only close the newsockfd but not sockfd
                     server->Close();
-
                 }
                 catch (SocketError& e)
                 {
                     loop = false;
-                    cerr << "server error: " << e.what() << endl;
+                    cerr << "error: " << e.what() << endl;
                     cout << "Please restart server." << endl;
                     server.reset(nullptr);
                     exit(1);
                 }
             }
-
          server.reset(nullptr);
          exit(1);
-
         }
 
+	/*************************************************************************
+        * a quick client/server communication and non-blocking read timeout test *
+	**************************************************************************/ 
+         void startTest()
+        {
+            cout << "\n*** C++ IO-Control Test ***\n" << endl;
+
+            try
+            {
+                unique_ptr<TcpServer::ServerSocket> server(new TcpServer::ServerSocket(51111));
+                unique_ptr<TcpClient::ClientSocket> client(new TcpClient::ClientSocket(51111));
+                server->Listen();
+
+                // client read should timeout since server didn't send yet any msg
+                // the process should continue on the next operation
+                client->Read(); //non-blocking client read timeout
+
+                client->Send("Yo server, hi ya!");
+                    cout << "data from client: " << server->Read() << endl;
+                server->Send("Client bro, what's up!");
+                    cout << "msg from server: " << client->Read() << endl;
+                client->Send("Server bro, I'm doin great!");
+                    cout << "data from client: " << server->Read() << endl;
+
+                // server read should timeout since client didn't send data after the first one
+                server->Read(); //non-blocking server read timeout
+
+                server->Send("You're a lucky dude! See yah later, client bro!");
+                    cout << "msg from server: " << client->Read() << endl;
+
+                client->Close();
+                // since Listen() is set to one time use w/o parameter
+                // close operation will close both newsockfd and sockfd and stop the process
+                server->Close();
+
+            }
+            catch (SocketError& e)
+            {
+                cerr << "error: " << e.what() << endl;
+                exit(1);
+            }
+
+        exit(0);
+        }
+
+	/**************************
+        * test using stack memory *
+	***************************/
+        void startOtherTest()
+        {
+            cout << "\n*** C++ IO-Control Test using stack memory ***\n" << endl;
+
+            using namespace TcpServer;
+            using namespace TcpClient;
+            try
+            {
+                // client/server socket setup
+                ServerSocket s;
+                ClientSocket c;
+                s.createServer(51111);
+                c.Connect(51111);
+                s.Listen();
+                // client/server communication logic
+                c.Send("Yo server, hi ya!");
+                cout << "client: " << s.Read() << endl;
+                s.Send("Client bro, what's up!");
+                cout << "server: " << c.Read() << endl;
+                c.Send("Server dude, I'm doin fine!");
+                cout << "client: " << s.Read() << endl;
+                s.Send("Great client bro, see yah later!");
+                cout << "server: " << c.Read() << endl;
+                // close and release sockets
+                c.Close();
+                s.Close();
+
+            }
+            catch (SocketError& e)
+            {
+                cerr << "error: " << e.what() << endl;
+                exit(1);
+            }
+
+        exit(0);
+        }
+
+	/****************************
+        * a simple echo server demo * 
+	*****************************/
+        void startEchoServer()
+        {
+            cout << "\n*** C++ IO-Control Echo Server Demo ***\n" << endl;
+
+            unique_ptr<TcpServer::ServerSocket> s(new TcpServer::ServerSocket(51111));
+
+            for (;;)
+            {
+                s->Listen(true);
+                cout << "data received and sending it back: ";
+                cout <<  s->Send(s->Read()) << endl;
+                s->Close();
+            }
+        }
 };
 
 }
+
