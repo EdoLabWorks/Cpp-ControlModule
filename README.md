@@ -20,6 +20,31 @@ Use any Linux C++11 compliant compiler or IDE to try it.
 
 Download [NodeJS web control](https://github.com/EdoLabWorks/NodeJS-Web-Control-Project) app and run it as a separate process.
 
+
+Below is a quick echo server sample.
+~~~~
+#include <iostream>
+#include <memory>
+#include "tcp/server.h"
+
+using namespace std;
+
+int main()
+{
+    unique_ptr<Tcp::Server> s(new Tcp::Server(8080));
+
+    for (;;)
+    {
+        s->Listen(true);
+        s->Send(s->Read());
+        s->Close();
+    }
+
+   return 0;
+}
+~~~~
+
+
 ### License
 MIT
 
