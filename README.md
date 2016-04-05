@@ -23,15 +23,12 @@ Download [NodeJS web control](https://github.com/EdoLabWorks/NodeJS-Web-Control-
 
 Below is a quick echo server sample.
 ~~~~
-#include <iostream>
 #include <memory>
 #include "tcp/server.h"
 
-using namespace std;
-
 int main()
 {
-    unique_ptr<Tcp::Server> s(new Tcp::Server(8080));
+    std::unique_ptr<Tcp::Server> s(new Tcp::Server(8080));
 
     for (;;)
     {
