@@ -30,7 +30,7 @@ class App
             cout << "\n*** C++ IO-Control Project ***\n" << endl;
 
             int serverport = 51111;
-            int clientport = 5556;
+            int clientport = 5555;
             // create server, ctrlLogic and client
             unique_ptr<Tcp::Server> server(new Tcp::Server);
             unique_ptr<Device:: ControlLogic> ControlModule(new  Device::ControlLogic);
