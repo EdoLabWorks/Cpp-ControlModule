@@ -107,7 +107,7 @@ class Server
                 throw SocketError();
             }
 
-	    int nb = fcntl(newsockfd, F_SETFL, O_NONBLOCK); //ok
+	    int nb = fcntl(newsockfd, F_SETFL, O_NONBLOCK);
             if (nb < 0){
               throw SocketError();
             }
@@ -128,8 +128,8 @@ class Server
     {
         try
         {
-            // check socket event for available data, wait 100 milliseconds for timeout
-            rv = poll(rs, 1, 100); //adjust timeout for your requirements
+            // check socket event for available data, wait 10 milliseconds for timeout
+            rv = poll(rs, 1, 10); //adjust timeout for your requirements
             if (rv < 0) {
                 throw SocketError();
             } else if (rv == 0) {
