@@ -3,6 +3,7 @@
 * Author: Ed Alegrid
 *
 */
+
 #pragma once
 #include <iostream>
 #include <string.h>
@@ -14,7 +15,6 @@
 #include <sstream>
 #include <netdb.h>
 #include "socketerror.h"
-
 
 namespace Tcp {
 using namespace std;
@@ -34,7 +34,7 @@ class Client
             return &(((struct sockaddr_in6*)sa)->sin6_addr);
       }
 
-      const int initSocket(int port, string ip)
+      int initSocket(const int &port, const string &ip)
       {
             string PORT;
             stringstream out;
@@ -105,15 +105,15 @@ class Client
       public:
        
        Client() {}
-       Client(const int port, const string ip = "127.0.0.1")  {initSocket(port, ip);}
+       Client(const int &port, const string &ip = "127.0.0.1")  {initSocket(port, ip);}
        virtual ~Client() {}
 
-       virtual const void Connect(const int port, const string ip = "127.0.0.1")
+       virtual const void Connect(const int &port, const string &ip = "127.0.0.1")
        {
            initSocket(port, ip);
        }
 
-       virtual string Send(const string msg) const
+       virtual const string Send(const string &msg) const
        {
            try
            {
