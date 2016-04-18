@@ -32,7 +32,7 @@ class Server
     int listenF, ServerLoop = false;
     struct pollfd rs[1];
 
-    int initSocket(const int &port, const string ip = "127.0.0.1")
+    int initSocket(const int &port, const string &ip = "127.0.0.1")
     {
     PORT = port;
     IP = ip;
@@ -80,10 +80,10 @@ class Server
     public:
  
     Server(){}
-    Server(const int &port, const string ip = "127.0.0.1" ): PORT{port}, IP{ip} { initSocket(port); }
+    Server(const int &port, const string &ip = "127.0.0.1" ): PORT{port}, IP{ip} { initSocket(port); }
     virtual ~Server() {}
 
-    void createServer(const int &port, const string ip = "127.0.0.1")
+    void createServer(const int &port, const string &ip = "127.0.0.1")
     {
         initSocket(port, ip);
     }
@@ -104,7 +104,7 @@ class Server
             auto l = [] (int fd, sockaddr_in client_addr, socklen_t clen)
             {
                auto newfd = accept4(fd, (struct sockaddr *) &client_addr, &clen, SOCK_NONBLOCK);
-               if (newfd < 0){ throw SocketError("Invalid socket descriptor!");}
+               if (newfd < 0){ throw SocketError("Invalid socket descriptor! Listen flag is false! \nMaybe you want to set it to true like Listen(true).");}
                return newfd;
             };
 
@@ -158,7 +158,7 @@ class Server
         return data;
     }
 
-    virtual string Send(const string msg) const
+    virtual string Send(const string &msg) const
     {
         try
          {
