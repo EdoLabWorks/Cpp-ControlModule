@@ -13,9 +13,14 @@ class SocketError : public std::exception
      std::string erMsg {"null"};
      char* ErrCode;
 
+
      public:
         // with no parameter, error message defaults to errno
-        SocketError() : ErrCode(strerror(errno)) {}
+        SocketError() : ErrCode(strerror(errno)) {
+            if(errno == 0){
+            ErrCode = "Can't find any error! Did you throw a SocketError?";
+            }
+        }
         // enter your own descriptive error message
         SocketError(const char* msg) : erMsg(msg) {}
         virtual ~SocketError() {}
