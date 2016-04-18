@@ -75,14 +75,13 @@ class App
 
                 }
             }
-         server.reset(nullptr);
-
+        server.reset(nullptr);
         }
 
         /*************************************************************************
     	* a quick client/server communication and non-blocking read timeout test *
         **************************************************************************/
-         void startTest()
+        void startTest()
         {
             cout << "\n*** C++ IO-Control Test ***\n" << endl;
 
@@ -116,7 +115,6 @@ class App
             catch (SocketError& e)
             {
                 cerr << "error: " << e.what() << endl;
-
             }
         }
 
@@ -153,9 +151,7 @@ class App
             catch (SocketError& e)
             {
                 cerr << "error: " << e.what() << endl;
-
             }
-
         }
 
         /****************************
