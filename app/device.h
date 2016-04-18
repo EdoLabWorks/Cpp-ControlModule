@@ -9,11 +9,11 @@
 namespace Device {
 using namespace std;
 
-class ControlLogic
+class Operation
 {
     public:
-        ControlLogic() {}
-        ~ControlLogic() {}
+         Operation() {}
+        ~ Operation() {}
 
         // control code operation
         const string processData(string m)
