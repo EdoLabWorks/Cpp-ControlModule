@@ -18,7 +18,7 @@ using namespace std;
 
 int main()
 {
-    unique_ptr<Controller::App> app(new Controller::App);
+    unique_ptr<App> app(new App);
 
     /* run and test each method one at a time */
 
