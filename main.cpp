@@ -5,7 +5,7 @@
 * Use any Linux C++11 compliant compiler or IDE. 
 *
 * 
-* This is a very simple synchronous TCP client/server library with non-blocking read timeout.
+* This is a very simple TCP client/server library with non-blocking read/send operations.
 * It was mainly use for testing TCP socket communications with Node-WebControl project.
 * 
 */
