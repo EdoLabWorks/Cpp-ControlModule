@@ -15,6 +15,8 @@
 #include <sstream>
 #include <netdb.h>
 #include <sys/fcntl.h>
+#include <thread>
+#include <future>
 #include "socketerror.h"
 
 namespace Tcp {
@@ -27,46 +29,45 @@ class Server
     socklen_t clen;
     char data[1024];
     sockaddr_in server_addr{}, client_addr{};
-    int listenF = false;
-    int ServerLoop = false;
+    int listenF, ServerLoop = false;
     struct pollfd rs[1];
 
     int initSocket(const int &port, const string ip = "127.0.0.1")
     {
     PORT = port;
     IP = ip;
-    try
-    {
-	if (port <= 0){
-	    throw SocketError("Invalid port");
-	}
-	sockfd =  socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0) {
-	    throw SocketError();
-	}
-	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(port);
-	inet_pton(AF_INET, ip.c_str(), &server_addr.sin_addr);
+    	try
+	{
+	   if (port <= 0){
+	   	throw SocketError("Invalid port");
+	   }
+	   sockfd =  socket(AF_INET, SOCK_STREAM, 0);
+	   if (sockfd < 0) {
+	    	throw SocketError();
+	  }
+	  server_addr.sin_family = AF_INET;
+	  server_addr.sin_port = htons(port);
+	  inet_pton(AF_INET, ip.c_str(), &server_addr.sin_addr);
 
-	int yes = 1;
-	setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
-	if ( bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
-	{
-	    throw SocketError();
+	  int reuse = 1;
+	  setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int));
+	  if ( bind(sockfd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0)
+	  {
+	    	throw SocketError();
+	  }
+	  else
+	  {
+	    	listen(sockfd, 5);
+	    	clen = sizeof(client_addr);
+	  }
+	  return 0;
 	}
-	else
+	catch (SocketError& e)
 	{
-	    listen(sockfd, 5);
-	    clen = sizeof(client_addr);
+	   cerr << "Server Socket Initialize Error: " << e.what() << endl;
+	   closeHandler();
+	   exit(1);
 	}
-	return 0;
-      }
-      catch (SocketError& e)
-      {
-	cerr << "Server Socket Initialize Error: " << e.what() << endl;
-	closeHandler();
-	exit(1);
-      }
     }
 
     void closeHandler() const
@@ -77,9 +78,8 @@ class Server
     }
 
     public:
-    // use with createServer() method
+ 
     Server(){}
-    // immediately initialize the server socket with the port provided
     Server(const int &port, const string ip = "127.0.0.1" ): PORT{port}, IP{ip} { initSocket(port); }
     virtual ~Server() {}
 
@@ -88,7 +88,6 @@ class Server
         initSocket(port, ip);
     }
 
-    // listen and accept new client from the socket
     void Listen(int serverloop = false)
     {
         ServerLoop = serverloop;
@@ -102,15 +101,15 @@ class Server
 
         try
         {
-            newsockfd = accept(sockfd, (struct sockaddr *) &client_addr, &clen);
-            if (newsockfd < 0){
-                throw SocketError();
-            }
+            auto l = [] (int fd, sockaddr_in client_addr, socklen_t clen)
+            {
+               auto newfd = accept4(fd, (struct sockaddr *) &client_addr, &clen, SOCK_NONBLOCK);
+               if (newfd < 0){ throw SocketError("Invalid socket descriptor!");}
+               return newfd;
+            };
 
-	    int nb = fcntl(newsockfd, F_SETFL, O_NONBLOCK);
-            if (nb < 0){
-              throw SocketError();
-            }
+            auto nfd = async(l, sockfd, client_addr, clen);
+            newsockfd = nfd.get();
 
             //cout << "server connection from client " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << "\n\n"; //debug output
             rs[0].fd = newsockfd;
