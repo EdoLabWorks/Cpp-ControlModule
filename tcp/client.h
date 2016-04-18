@@ -71,6 +71,8 @@ class Client
                     // initial client console output, provide one in your application
                     cout << "Client connected to: " << s << ":" << port << endl; //debug ouput
                 }
+		
+		if (fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0){ throw SocketError();}
 
                 if (servinfo == nullptr) {
                     throw SocketError("Client connect fail ...");
@@ -101,33 +103,32 @@ class Client
       }
 
       public:
-        // use with Connect() method
-        Client() {}
-        // immediately initialize the client socket with the port and ip provided
-        Client(const int port, const string ip = "127.0.0.1")  {initSocket(port, ip);}
-        virtual ~Client() {}
+       
+       Client() {}
+       Client(const int port, const string ip = "127.0.0.1")  {initSocket(port, ip);}
+       virtual ~Client() {}
 
-        virtual const void Connect(const int port, const string ip = "127.0.0.1")
-        {
-            initSocket(port, ip);
-        }
+       virtual const void Connect(const int port, const string ip = "127.0.0.1")
+       {
+           initSocket(port, ip);
+       }
 
-        virtual string Send(const string msg) const
-        {
-            try
-            {
-                int n = send(sockfd, msg.c_str(), strlen(msg.c_str()), 0);
-                if (n < 0) {
-                    throw SocketError();
-                }
-            }
-            catch (SocketError& e)
-            {
-                 cerr << "Client Send Error: " << e.what() << endl;
-                 closeHandler();
-            }
-            return msg;
-        }
+       virtual string Send(const string msg) const
+       {
+           try
+           {
+               int n = send(sockfd, msg.c_str(), strlen(msg.c_str()), 0);
+               if (n < 0) {
+                   throw SocketError();
+               }
+           }
+           catch (SocketError& e)
+           {
+                cerr << "Client Send Error: " << e.what() << endl;
+                closeHandler();
+           }
+           return msg;
+       }
 
        virtual const string Read()
        {
