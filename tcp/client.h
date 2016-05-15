@@ -17,7 +17,6 @@
 #include "socketerror.h"
 
 namespace Tcp {
-using namespace std;
 
 class Client
 {
@@ -34,10 +33,10 @@ class Client
             return &(((struct sockaddr_in6*)sa)->sin6_addr);
       }
 
-      int initSocket(const int &port, const string &ip)
+      int initSocket(const int &port, const std::string &ip)
       {
-            string PORT;
-            stringstream out;
+            std::string PORT;
+            std::stringstream out;
             out << port;
             PORT = out.str();
 
@@ -53,7 +52,7 @@ class Client
                 }
 
                 if ((rv = getaddrinfo(ip.c_str(), PORT.c_str(), &hints, &servinfo)) != 0) {
-                    cout << "getaddrinfo: " << gai_strerror(rv) << endl;
+                    std::cout << "getaddrinfo: " << gai_strerror(rv) << std::endl;
                     throw SocketError("Invalid address");
                 }
 
@@ -61,7 +60,7 @@ class Client
                 int result{ connect(sockfd, servinfo->ai_addr, servinfo->ai_addrlen)};
                 if (result < 0)
                 {
-                    cout << "Client connection failed!" << endl;
+                    std::cout << "Client connection failed!" << std::endl;
                     throw SocketError();
                 }
                 else
@@ -69,9 +68,9 @@ class Client
                     // details of remote connected endpoint
                     inet_ntop(servinfo->ai_family, get_addr((struct sockaddr *)servinfo->ai_addr), s, sizeof s);
                     // initial client console output, provide one in your application
-                    cout << "Client connected to: " << s << ":" << port << endl; //debug ouput
+                    std::cout << "Client connected to: " << s << ":" << port << std::endl; //debug ouput
                 }
-		
+
 		if (fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0){ throw SocketError();}
 
                 if (servinfo == nullptr) {
@@ -89,13 +88,13 @@ class Client
 
             catch (SocketError& e)
             {
-                cerr << "Client Socket Initialize Error: " << e.what() << endl;
+                std::cerr << "Client Socket Initialize Error: " << e.what() << std::endl;
                 closeHandler();
                 exit(1);
             }
       }
 
-      void closeHandler() const
+      void closeHandler()
       {
             Close();
             delete this;
@@ -103,17 +102,17 @@ class Client
       }
 
       public:
-       
+
        Client() {}
-       Client(const int &port, const string &ip = "127.0.0.1")  {initSocket(port, ip);}
+       Client(const int &port, const std::string &ip = "127.0.0.1")  {initSocket(port, ip);}
        virtual ~Client() {}
 
-       virtual const void Connect(const int &port, const string &ip = "127.0.0.1")
+       virtual const void Connect(const int &port, const std::string &ip = "127.0.0.1")
        {
            initSocket(port, ip);
        }
 
-       virtual const string Send(const string &msg) const
+       virtual const std::string Send(const std::string &msg)
        {
            try
            {
@@ -124,13 +123,13 @@ class Client
            }
            catch (SocketError& e)
            {
-                cerr << "Client Send Error: " << e.what() << endl;
+                std::cerr << "Client Send Error: " << e.what() << std::endl;
                 closeHandler();
            }
            return msg;
        }
 
-       virtual const string Read()
+       virtual const std::string Read()
        {
             try
             {
@@ -139,9 +138,10 @@ class Client
                 if (rd < 0) {
                     throw SocketError();
                 } else if (rd == 0) {
-                    cout << "Client read timeout error! No data received!\n";
+                    std::cout << "Client read timeout error! No data received!\n";
                 } else {
                     ssize_t n{1};
+                     data[1024] = {};
                     bzero(data, sizeof(data));
                     // check for events on newsockfd:
                     if (rs[0].revents & POLLIN) {
@@ -153,19 +153,19 @@ class Client
                         n = {recv(sockfd, data, sizeof(data), MSG_OOB)}; // out-of-band data
                     }
                     if (n == 0){
-                         cout << "Client read error, socket is closed or disconnected!\n";
+                         std::cout << "Client read error, socket is closed or disconnected!\n";
                     }
                 }
             }
             catch (SocketError& e)
             {
-                cerr << "Client Read Error: " << e.what() << endl;
+                std::cerr << "Client Read Error: " << e.what() << std::endl;
                 closeHandler();
             }
             return data;
        }
 
-       virtual void Close() const
+       virtual void Close()
        {
             close(sockfd);
        }
