@@ -20,19 +20,19 @@
 #include "socketerror.h"
 
 namespace Tcp {
-using namespace std;
 
 class Server
 {
     int sockfd, newsockfd, PORT, rv;
-    string IP;
+    std::string IP;
     socklen_t clen;
     char data[1024];
     sockaddr_in server_addr{}, client_addr{};
-    int listenF, ServerLoop = false;
+    int listenF = false;
+    int ServerLoop = false;
     struct pollfd rs[1];
 
-    int initSocket(const int &port, const string &ip = "127.0.0.1")
+    int initSocket(const int &port, const std::string &ip = "127.0.0.1")
     {
     PORT = port;
     IP = ip;
@@ -64,13 +64,13 @@ class Server
 	}
 	catch (SocketError& e)
 	{
-	   cerr << "Server Socket Initialize Error: " << e.what() << endl;
+	   std::cerr << "Server Socket Initialize Error: " << e.what() << std::endl;
 	   closeHandler();
 	   exit(1);
 	}
     }
 
-    void closeHandler() const
+    void closeHandler()
     {
         Close();
         delete this;
@@ -78,12 +78,12 @@ class Server
     }
 
     public:
- 
+
     Server(){}
-    Server(const int &port, const string &ip = "127.0.0.1" ): PORT{port}, IP{ip} { initSocket(port); }
+    Server(const int &port, const std::string &ip = "127.0.0.1" ): PORT{port}, IP{ip} { initSocket(port, ip); }
     virtual ~Server() {}
 
-    void createServer(const int &port, const string &ip = "127.0.0.1")
+    void createServer(const int &port, const std::string &ip = "127.0.0.1")
     {
         initSocket(port, ip);
     }
@@ -91,13 +91,6 @@ class Server
     void Listen(int serverloop = false)
     {
         ServerLoop = serverloop;
-
-        if (!listenF){
-            // initial server console output, provide one in your application
-            //cout << "server listening on port: " << inet_ntoa(server_addr.sin_addr) << ":" << PORT << "\n\n"; //debug output
-            cout << "Server listening on: " << IP << ":" << PORT << "\n\n"; //debug output
-            listenF = true;
-        }
 
         try
         {
@@ -108,31 +101,43 @@ class Server
                return newfd;
             };
 
-            auto nfd = async(l, sockfd, client_addr, clen);
+
+        if (!listenF){
+            // initial server console output, provide one in your application
+            //std::cout << "server listening on port: " << inet_ntoa(server_addr.sin_addr) << ":" << PORT << "\n\n"; //debug output
+            std::cout << "Server listening on: " << IP << ":" << PORT << "\n\n"; //debug output
+            listenF = true;
+        }
+
+            auto nfd = std::async(l, sockfd, client_addr, clen);
             newsockfd = nfd.get();
 
-            //cout << "server connection from client " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << "\n\n"; //debug output
+            //std::cout << "server connection from client " << inet_ntoa(client_addr.sin_addr) << ":" << ntohs(client_addr.sin_port) << "\n\n"; //debug output
             rs[0].fd = newsockfd;
             rs[0].events = POLLIN | POLLPRI;
 
         }
         catch (SocketError& e)
         {
-            cerr << "Server Listen Error: " << e.what() << endl;
+            std::cerr << "Server Listen Error: " << e.what() << std::endl;
             closeHandler();
         }
     }
 
-    virtual const string Read()
+    virtual const std::string Read()
     {
         try
         {
+            if(!listenF){
+                 throw SocketError("No listening socket!\n Did you forget to start the Listen() method!");
+            }
+
             // check socket event for available data, wait 10 milliseconds for timeout
             rv = poll(rs, 1, 10); //adjust timeout for your requirements
             if (rv < 0) {
                 throw SocketError();
             } else if (rv == 0) {
-                cout << "Server read timeout error! No data received!\n";
+                std::cout << "Server read timeout error! No data received!\n";
             } else {
                 ssize_t n{1};
                 bzero(data, sizeof(data));
@@ -146,22 +151,26 @@ class Server
                     n = {recv(newsockfd, data, sizeof(data), MSG_OOB)}; // out-of-band data
                 }
                 if (n == 0){
-                     cout << "Server read error, socket is closed or disconnected!\n";
+                     std::cout << "Server read error, socket is closed or disconnected!\n";
                 }
             }
         }
         catch (SocketError& e)
         {
-            cerr << "Server Read Error: " << e.what() << endl;
+            std::cerr << "Server Read Error: " << e.what() << std::endl;
             closeHandler();
         }
         return data;
     }
 
-    virtual string Send(const string &msg) const
+    virtual std::string Send(const std::string &msg)
     {
         try
          {
+            if(!listenF){
+                 throw SocketError("No listening socket!\n Did you forget to start the Listen() method!");
+            }
+
             ssize_t n{send(newsockfd, msg.c_str(), strlen(msg.c_str()), 0)};
             if (n < 0) {
                 throw SocketError();
@@ -169,14 +178,14 @@ class Server
         }
         catch (SocketError& e)
         {
-            cerr << "Server Send Error: " << e.what() << endl;
+            std::cerr << "Server Send Error: " << e.what() << std::endl;
             closeHandler();
         }
 
         return msg;
     }
 
-    virtual void Close() const
+    virtual void Close()
     {
         if(ServerLoop){
             close(newsockfd);
