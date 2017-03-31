@@ -11,7 +11,7 @@
 
 #include <iostream>
 #include <memory>
-#include "app/controller.h"
+#include "app/CppModule.h"
 #include "test/test.h"
 
 using namespace std;
@@ -20,6 +20,5 @@ int main()
 {
    App::startCtrl();
    //Test::startAll();
-
    return 0;
 }
