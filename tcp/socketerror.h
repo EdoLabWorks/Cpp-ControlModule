@@ -11,8 +11,7 @@
 class SocketError : public std::exception
 {
      std::string erMsg {"null"};
-     char* ErrCode;
-
+     const char* ErrCode;
 
      public:
         // with no parameter, error message defaults to errno
