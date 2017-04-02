@@ -141,7 +141,6 @@ class Client
                     std::cout << "Client read timeout error! No data received!\n";
                 } else {
                     ssize_t n{1};
-                     data[1024] = {};
                     bzero(data, sizeof(data));
                     // check for events on newsockfd:
                     if (rs[0].revents & POLLIN) {
