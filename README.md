@@ -14,6 +14,8 @@ The read buffer size is fixed to 1024 bytes which you can easily adjust to meet 
 Use any Linux C++11 compliant compiler or IDE to try it.
 
 Using GCC g++, create the object file in the root folder where the main.cpp file is located.
+For LLVM clang, just replace g++ with clang++ using the same options and following the same steps.
+
 ~~~
 $ g++ -Wall -std=c++11 -c main.cpp -o main.o
 ~~~
